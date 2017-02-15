@@ -1,0 +1,202 @@
+library(tidyverse)
+library(timeDate)
+library(scales)
+library(RColorBrewer)
+library(extrafont)
+library(xlsx)
+
+install.packages("xlsx")
+
+#задаем формат даты для последующего преобразования
+setAs("character", "myDate", function(from)
+  as.Date(from, format = "%d.%m.%Y"))
+
+#загрузка регистрационных данных с e-data
+#с преобразованием даты
+er <-
+  read.csv2(
+    url(
+      "http://spending.gov.ua/documents/20182//364816548//stat_kabinet.csv"
+    ),
+    header = TRUE,
+    sep = ";",
+    skip = 2,
+    quote = "",
+    stringsAsFactors = FALSE,
+    colClasses = (c(
+      ЄДРПОУ       = "character",       Дата.реєстрації       = "myDate"
+    ))
+  )
+
+#или преобразуем дату так
+#er[[1]] <- as.Date(er[[1]], "%d.%m.%Y")
+
+#загрузка последнего обновления реестра
+cr <-
+  read_csv("case_register.csv",
+           col_types = cols(edrpou = col_character(), reg_date = col_date(format = "%Y-%m-%d")))
+
+#вновь зарегистрированные предприятия
+new <- cr[is.na(cr$reg_date),] %>%
+  filter(edrpou %in% er[[2]]) %>%
+  left_join(er, by = c("edrpou" = "ЄДРПОУ"))
+
+#текущее обновление
+cr <-
+  within(cr, reg_date[edrpou %in% new$edrpou] <-
+           timeLastDayInMonth(new$Дата.реєстрації))
+
+#перезаписываем текущее обновление в файл
+write_csv(cr, "case_register.csv")
+
+oldOpt <- options()
+options(xlsx.date.format = "dd.mm.yyyy")
+write.xlsx(cr, "tableau_register.xlsx", showNA = FALSE)
+options(oldOpt)
+
+
+?write.xlsx
+
+#=============== графика ===============#
+
+myPal <- brewer.pal(5, "Reds")
+
+#всего действующих предприятий
+adp <- nrow(subset(
+  cr,
+  bankruptcy == "зареєстровано" &
+    !(region == "ОРДЛО" |
+        region == "АР Крим" | region == "Севастополь")
+))
+
+#группировка по месяцам
+#вплоть до предыдущего месяца
+crGrouped <- cr %>%
+  filter(!is.na(reg_date) & reg_date <= Sys.Date()) %>%
+  group_by(reg_date) %>%
+  summarise(count = n())
+
+#количество регистраций накопительным итогом
+crGrouped$cumul <- with(crGrouped, ave(count, FUN = cumsum))
+
+#преобразование в "долгий" формат
+crGrouped <- crGrouped %>% mutate(cumul, nreg = adp - cumul) %>%
+  select(1, 3:4) %>%
+  gather(cumul, nreg, key = reg, value = count)
+
+crGrouped$reg_date <-
+  as.Date(timeFirstDayInMonth(crGrouped$reg_date))
+
+
+p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
+  geom_bar(
+    mapping = aes(
+      x = reg_date,
+      y = count,
+      fill = factor(reg, levels = c("nreg", "cumul"))
+    ),
+    stat = "identity",
+    color = "#FFFFFF",
+    #процентное представление
+    position = "fill"
+  ) +
+  scale_fill_manual(
+    values =
+      c(myPal[2], myPal[4]),
+    labels = c("незареєстровані", "зареєстровані")
+  ) +
+  scale_y_continuous(labels = percent) +
+  scale_x_date(labels = date_format("%m/%y")) +
+  #внешний вид графика
+  theme(
+    #основной шрифт
+    text = element_text(family = "PT Sans", size = 19),
+    plot.title = element_text(
+      face = "bold",
+      margin = margin(
+        t = 0,
+        r = 20,
+        b = 20,
+        l = 20,
+        unit = "pt"
+      )
+    ),
+    plot.subtitle = element_text(
+      #относительный размер шрифта
+      size = rel(0.65),
+      margin = margin(
+        t = 0,
+        r = 20,
+        b = 35,
+        l = 20,
+        unit = "pt"
+      )
+    ),
+    plot.caption = element_text(
+      #относительный размер шрифта
+      size = rel(0.5),
+      face = "italic",
+      margin = margin(t = 30,
+                      b = 15,
+                      unit = "pt")
+    ),
+    legend.text = element_text(
+      size = rel(0.6),
+      margin = margin(
+        t = 0,
+        r = 20,
+        b = 30,
+        l = 20,
+        unit = "pt"
+      )
+    ),
+    axis.text.y = element_text(size = rel(0.65)),
+    axis.text.x = element_text(size = rel(0.65)),
+    #отключаем отображение отдельных элементов
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "top",
+    legend.title = element_blank(),
+    plot.margin = unit(c(45, 20, 40, 20), "pt")
+  ) +
+  #заголовки и подписи осей
+  labs(
+    title = "Реєстрація ДП на e-data",
+    caption = "графіка проекту \"Ціна держави\" за даними http://e-data.gov.ua",
+    subtitle = paste(
+      max(crGrouped$count[crGrouped$reg == "cumul"]),
+      "компаній державного сектору із",
+      adp,
+      "\nзареєстрованo на порталі публічних фінансів\ne-data.gov.ua станом на",
+      format(timeFirstDayInMonth(Sys.Date()), "%d.%m.%Y"),
+      "року.",
+      sep = " "
+    )
+  )
+
+jpeg(
+  filename = "test.jpg",
+  width = 450,
+  height = 650,
+  units = "px",
+  quality = 100,
+  res = 100
+)
+plot(p)
+dev.off()
+
+library(mailR)
+
+password <- readLines("../password.txt")
+
+send.mail(from = "wldmrgml@gmail.com",
+          to = c("golomb@cci.zp.ua"),
+          subject = "test_subject2",
+          body = "test_body2",
+          smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "wldmrgml@gmail.com", passwd = password, ssl = TRUE),
+          authenticate = TRUE,
+          send = TRUE)

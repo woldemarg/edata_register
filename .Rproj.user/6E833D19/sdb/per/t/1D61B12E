@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "library(tidyverse)\nlibrary(RSelenium)\nlibrary(xml2)\nlibrary(rvest)\n\ndpReestr <-\n  read_csv(\"dp_reestr.csv\")\n\n#список кодов ЕДРПОУ для добавления к адресу\nlist1 <- dpReestr %>%\n  filter(bankruptcy == \"зареєстровано\" &\n           !(region == \"ОРДЛО\" | region == \"АР Крим\" | region == \"Севастополь\")) %>%\n  .$edrpou %>%\n  as.numeric()\n\n#настройка драйвера виртуального сервера\nremDr <-\n  remoteDriver(remoteServerAddr = \"localhost\",\n               port = 4444,\n               browserName = \"firefox\")\n\n#функция поиска данных на странице по адресу c кодом ЕДРПОУ\ngetData <- function(urls, timeout) {\n  debt <-\n    data.frame(\n      edrpou = rep(0, length(urls)),\n      debt = rep(0, length(urls)),\n      code = rep(0, length(urls))\n    )\n\n  remDr$open()\n\n  for (i in seq_along(urls)) {\n    cat(paste(\"Doing\", urls[[i]], \"...\"))\n    remDr$navigate(paste(\"https://opendatabot.com/c/\", urls[[i]], sep = \"\"))\n    Sys.sleep(timeout)\n    page <- remDr$getPageSource()\n\n    if (grepl(\"<body>404</body>\", page)) {\n      debt[i, ] <- c(urls[[i]], NA, NA)\n      cat(\" Error.\")\n\n    } else {\n      html <- read_html(page[[1]])\n      dBlock <- html %>%\n        html_nodes(\".attention\") %>%\n        html_text()\n      d <- ifelse(grepl(\"[[:space:]]{1,8}$\", dBlock),\n                  NA,\n                  ifelse(grepl(\"борг\", dBlock),\n                         gsub(\n                           \"[[:space:]]\",\n                           \"\",\n                           gsub(\".*:\\\\s(.*)\\\\sгрн.*\", \"\\\\1\", dBlock)\n                         ),\n                         0))\n      cBlock <- html %>%\n        html_nodes(\".attention+ p\") %>%\n        html_text()\n      c <- gsub(\".*:\\\\s(\\\\d{2}.\\\\d{2}).*\", \"\\\\1\", cBlock)\n\n      #https://stat.ethz.ch/pipermail/r-help/2006-June/107734.html\n      debt[i, ] <-\n        c(urls[[i]], d, c)\n\n      cat(\" Done.\")\n    }\n    cat(\"\\n\")\n  }\n\n  remDr$close()\n\n  return(as_tibble(debt))\n}\n\n#результаты первого прохода (с задержкой 2 сек)\nredoFirst <- getData(list1, 2)\n\n#выбор кодов ЕДРПОУ неполных данных по результатам первого проходаанными\nlist2 <- redoFirst %>%\n  filter(is.na(debt) & !is.na(code)) %>%\n  .$edrpou\n\n#результаты второго прохода (с задержкой 5 сек)\nredoSecond <- getData(list2, 5)\n\n#удаление дубликатов по результатам обоих проходов\nredoFirstCleaned <- redoFirst %>%\n  anti_join(redoSecond, by = \"edrpou\")\n\n#объединение данных\nallDebt <- union(redoFirstCleaned, redoSecond)\n\n#проверка на наличие дубликатов\nallDebt %>%\n  count(edrpou) %>%\n  filter(n > 1)\n\n#сохранение результатв в файл\nwrite_csv(allDebt, \"dp_debt.csv\")\n",
+    "created" : 1487073798012.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "806653678",
+    "id" : "1D61B12E",
+    "lastKnownWriteTime" : 1485718604,
+    "last_content_update" : 1485718604,
+    "path" : "D:/OneDrive/my_git_repos/tax_debt/dp_debt_parsing.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
