@@ -220,11 +220,11 @@ dev.off()
 password <- readLines("../pass.txt")
 
 send.mail(from = "wldmrgml@gmail.com",
-          to = c("viktoria.golomb@cci.zp.ua"),
+          to = c("viktoria.golomb@gmail.com"),
           cc = c("wldmrgml@gmail.com"),
-          subject = paste("Оновлення реєстру ДП на e-data від", format(timeFirstDayInMonth(Sys.Date()), "%d.%m.%Y"), sep = " "),
-          body = "<html>The apache logo - <img src=\"https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg\"></html>",
-          attach.files = с("https://github.com/woldemarg/edata_register/raw/master/tableau_register.xlsx"),
+          subject = paste("E-data register update from", format(Sys.Date(), "%d.%m.%Y"), sep = " "),
+          body = "Графіка доступна за посиланням - https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg",
+          attach.files = c("tableau_register.xlsx"),
           smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "wldmrgml@gmail.com", passwd = password, ssl = TRUE),
           authenticate = TRUE,
           send = TRUE)
