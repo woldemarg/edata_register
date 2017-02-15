@@ -4,8 +4,13 @@ library(scales)
 library(RColorBrewer)
 library(extrafont)
 library(xlsx)
+library(mailR)
 
-install.packages("xlsx")
+
+
+#=============== актуализация данных ===============#
+
+
 
 #задаем формат даты для последующего преобразования
 setAs("character", "myDate", function(from)
@@ -41,27 +46,36 @@ new <- cr[is.na(cr$reg_date),] %>%
   filter(edrpou %in% er[[2]]) %>%
   left_join(er, by = c("edrpou" = "ЄДРПОУ"))
 
-#текущее обновление
+#актуализация
 cr <-
   within(cr, reg_date[edrpou %in% new$edrpou] <-
            timeLastDayInMonth(new$Дата.реєстрації))
 
+
+
+#=============== сохранение данных ===============#
+
+
+
 #перезаписываем текущее обновление в файл
 write_csv(cr, "case_register.csv")
 
+#сохранение в формате xls для последующей работы в Табло
 oldOpt <- options()
 options(xlsx.date.format = "dd.mm.yyyy")
 write.xlsx(cr, "tableau_register.xlsx", showNA = FALSE)
 options(oldOpt)
 
 
-?write.xlsx
 
 #=============== графика ===============#
 
+
+
+#палитра
 myPal <- brewer.pal(5, "Reds")
 
-#всего действующих предприятий
+#количество действующих предприятий
 adp <- nrow(subset(
   cr,
   bankruptcy == "зареєстровано" &
@@ -84,10 +98,13 @@ crGrouped <- crGrouped %>% mutate(cumul, nreg = adp - cumul) %>%
   select(1, 3:4) %>%
   gather(cumul, nreg, key = reg, value = count)
 
+#приводим данные на первое число месяца
 crGrouped$reg_date <-
   as.Date(timeFirstDayInMonth(crGrouped$reg_date))
 
-
+#основной график
+#width - ширина столба в днях для временной шкалы
+#значение з1 (дн) выравнивает ширину столбцов
 p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
   geom_bar(
     mapping = aes(
@@ -100,15 +117,18 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
     #процентное представление
     position = "fill"
   ) +
-  scale_fill_manual(
+
+#настройка легенды и формат осей
+ scale_fill_manual(
     values =
       c(myPal[2], myPal[4]),
     labels = c("незареєстровані", "зареєстровані")
   ) +
   scale_y_continuous(labels = percent) +
   scale_x_date(labels = date_format("%m/%y")) +
+
   #внешний вид графика
-  theme(
+theme(
     #основной шрифт
     text = element_text(family = "PT Sans", size = 19),
     plot.title = element_text(
@@ -133,7 +153,6 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
       )
     ),
     plot.caption = element_text(
-      #относительный размер шрифта
       size = rel(0.5),
       face = "italic",
       margin = margin(t = 30,
@@ -152,19 +171,21 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
     ),
     axis.text.y = element_text(size = rel(0.65)),
     axis.text.x = element_text(size = rel(0.65)),
-    #отключаем отображение отдельных элементов
+    plot.margin = unit(c(45, 20, 40, 20), "pt"),
+    legend.position = "top",
+
+    #неотображаемые элементы
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     panel.background = element_blank(),
     axis.ticks.y = element_blank(),
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
-    legend.position = "top",
-    legend.title = element_blank(),
-    plot.margin = unit(c(45, 20, 40, 20), "pt")
+    legend.title = element_blank()
   ) +
+
   #заголовки и подписи осей
-  labs(
+labs(
     title = "Реєстрація ДП на e-data",
     caption = "графіка проекту \"Ціна держави\" за даними http://e-data.gov.ua",
     subtitle = paste(
@@ -178,10 +199,11 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
     )
   )
 
+#параметры сохранения в файл
 jpeg(
-  filename = "test.jpg",
+  filename = "dp_on_edata.jpg",
   width = 450,
-  height = 650,
+  height = 700,
   units = "px",
   quality = 100,
   res = 100
@@ -189,14 +211,20 @@ jpeg(
 plot(p)
 dev.off()
 
-library(mailR)
 
-password <- readLines("../password.txt")
+
+#=============== отправка письма ===============#
+
+
+
+password <- readLines("../pass.txt")
 
 send.mail(from = "wldmrgml@gmail.com",
-          to = c("golomb@cci.zp.ua"),
-          subject = "test_subject2",
-          body = "test_body2",
+          to = c("viktoria.golomb@cci.zp.ua"),
+          cc = c("wldmrgml@gmail.com"),
+          subject = paste("Оновлення реєстру ДП на e-data від", format(timeFirstDayInMonth(Sys.Date()), "%d.%m.%Y"), sep = " "),
+          body = "<html>The apache logo - <img src=\"https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg\"></html>",
+          attach.files = с("https://github.com/woldemarg/edata_register/raw/master/tableau_register.xlsx"),
           smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "wldmrgml@gmail.com", passwd = password, ssl = TRUE),
           authenticate = TRUE,
           send = TRUE)
