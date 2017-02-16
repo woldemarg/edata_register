@@ -1,15 +1,15 @@
 ##Описание процесса актуализации и анализа данных
 
 ###Библиотеки. R
-Скрипт написн на языке **R**. Список библиотек:
+Скрипт написн на языке **R**. Список библиотек и их использование:
 ```R
-library(tidyverse)
-library(timeDate)
-library(scales)
-library(RColorBrewer)
-library(extrafont)
-library(xlsx)
-library(mailR)
+library(tidyverse) #основная обработка данных и графика
+library(timeDate) #приведение даты к последнему дню месяца
+library(scales) #процентная шкала
+library(RColorBrewer) #палитра
+library(extrafont) #работа со шрифтом PT Sans
+library(xlsx) #сохранение в формате Excel
+library(mailR) #отправка почты из R
 ```
 
 
