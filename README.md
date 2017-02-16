@@ -24,5 +24,6 @@ library(mailR)
 
 Подробные комметарии приведены прямо по ходу в файле **main.R**
 
+
 ###Результат работы алгоритма (график)
 ![Реєстрація ДП на edata](https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg)
