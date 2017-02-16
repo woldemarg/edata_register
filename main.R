@@ -29,7 +29,7 @@ er <-
     quote = "",
     stringsAsFactors = FALSE,
     colClasses = (c(
-      ЄДРПОУ       = "character",       Дата.реєстрації       = "myDate"
+      ЄДРПОУ        = "character",        Дата.реєстрації        = "myDate"
     ))
   )
 
@@ -42,7 +42,7 @@ cr <-
            col_types = cols(edrpou = col_character(), reg_date = col_date(format = "%Y-%m-%d")))
 
 #вновь зарегистрированные предприятия
-new <- cr[is.na(cr$reg_date),] %>%
+new <- cr[is.na(cr$reg_date), ] %>%
   filter(edrpou %in% er[[2]]) %>%
   left_join(er, by = c("edrpou" = "ЄДРПОУ"))
 
@@ -118,8 +118,8 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
     position = "fill"
   ) +
 
-#настройка легенды и формат осей
- scale_fill_manual(
+  #настройка легенды и формат осей
+  scale_fill_manual(
     values =
       c(myPal[2], myPal[4]),
     labels = c("незареєстровані", "зареєстровані")
@@ -128,7 +128,7 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
   scale_x_date(labels = date_format("%m/%y")) +
 
   #внешний вид графика
-theme(
+  theme(
     #основной шрифт
     text = element_text(family = "PT Sans", size = 19),
     plot.title = element_text(
@@ -185,7 +185,7 @@ theme(
   ) +
 
   #заголовки и подписи осей
-labs(
+  labs(
     title = "Реєстрація ДП на e-data",
     caption = "графіка проекту \"Ціна держави\" за даними http://e-data.gov.ua",
     subtitle = paste(
@@ -217,14 +217,31 @@ dev.off()
 
 
 
+#оригинальный способ чтения пароля
+#https://www.r-bloggers.com/sending-email-from-r/
 password <- readLines("../pass.txt")
 
-send.mail(from = "wldmrgml@gmail.com",
-          to = c("viktoria.golomb@gmail.com"),
-          cc = c("wldmrgml@gmail.com"),
-          subject = paste("E-data register update from", format(Sys.Date(), "%d.%m.%Y"), sep = " "),
-          body = "Графіка доступна за посиланням - https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg",
-          attach.files = c("tableau_register.xlsx"),
-          smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "wldmrgml@gmail.com", passwd = password, ssl = TRUE),
-          authenticate = TRUE,
-          send = TRUE)
+#настройки почты
+#https://github.com/rpremraj/mailR
+send.mail(
+  from = "wldmrgml@gmail.com",
+  to = "yevhen.shulha@gmail.com",
+  cc = c("dmytro.boyarchuk@gmail.com","wldmrgml@gmail.com"),
+  subject = paste(
+    "E-data register update from",
+    format(Sys.Date(), "%d.%m.%Y"),
+    sep = " "
+  ),
+  body = "Доброго дня!\n\nЗа вашим запитом я оновив реєстр ДП. В додатку до цього листа - актуалізований файл для експорту в Tableau та графік.\n\nНагадую, що для для вставки графіка на Інтернет-сторінку можна використовувати постійне посилання https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg.\n\nЯкщо графік в додатку (новий) відрізняється від графіка за посилання - нагадйте мені, будь ласка, перезавантажити його на сервер, і все буде ОК!\n\nЦей лист надіслано автоматично\nhttps://github.com/woldemarg/edata_register",
+  encoding = "utf-8",
+  attach.files = c("tableau_register.xlsx", "dp_on_edata.jpg"),
+  smtp = list(
+    host.name = "smtp.gmail.com",
+    port = 465,
+    user.name = "wldmrgml@gmail.com",
+    passwd = password,
+    ssl = TRUE
+  ),
+  authenticate = TRUE,
+  send = TRUE
+)
