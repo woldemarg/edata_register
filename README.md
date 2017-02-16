@@ -5,7 +5,7 @@
 ```R
 library(tidyverse) #основная обработка данных и графика
 library(timeDate) #приведение даты к последнему дню месяца
-library(scales) #процентная шкала
+library(scales) #процентная и временная шкала
 library(RColorBrewer) #палитра
 library(extrafont) #работа со шрифтом PT Sans
 library(xlsx) #сохранение в формате Excel
