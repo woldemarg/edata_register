@@ -17,7 +17,7 @@ setAs("character", "myDate", function(from)
   as.Date(from, format = "%d.%m.%Y"))
 
 #загрузка регистрационных данных с e-data
-#с преобразованием даты
+#и преобразованием формата даты
 er <-
   read.csv2(
     url(
@@ -29,7 +29,7 @@ er <-
     quote = "",
     stringsAsFactors = FALSE,
     colClasses = (c(
-      ЄДРПОУ        = "character",        Дата.реєстрації        = "myDate"
+      ЄДРПОУ = "character", Дата.реєстрації = "myDate"
     ))
   )
 
@@ -94,7 +94,7 @@ crGrouped <- cr %>%
 crGrouped$cumul <- with(crGrouped, ave(count, FUN = cumsum))
 
 #преобразование в "долгий" формат
-crGrouped <- crGrouped %>% mutate(cumul, nreg = adp - cumul) %>%
+crGrouped %<>% mutate(cumul, nreg = adp - cumul) %>%
   select(1, 3:4) %>%
   gather(cumul, nreg, key = reg, value = count)
 
@@ -190,9 +190,9 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
     caption = "графіка проекту \"Ціна держави\" за даними http://e-data.gov.ua",
     subtitle = paste(
       max(crGrouped$count[crGrouped$reg == "cumul"]),
-      "компаній державного сектору із",
+      "компаній(-я) державного сектору із",
       adp,
-      "\nзареєстрованo на порталі публічних фінансів\ne-data.gov.ua станом на",
+      "\nзареєстрованo(-а) на порталі публічних фінансів\ne-data.gov.ua станом на",
       format(timeFirstDayInMonth(Sys.Date()), "%d.%m.%Y"),
       "року.",
       sep = " "
@@ -232,7 +232,7 @@ send.mail(
     format(Sys.Date(), "%d.%m.%Y"),
     sep = " "
   ),
-  body = "Доброго дня!\n\nЗа вашим запитом я оновив реєстр ДП. В додатку до цього листа - актуалізований файл для експорту в Tableau та графік.\n\nНагадую, що для для вставки графіка на Інтернет-сторінку можна використовувати постійне посилання https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg.\n\nЯкщо графік в додатку (новий) відрізняється від графіка за посилання - нагадйте мені, будь ласка, перезавантажити його на сервер, і все буде ОК!\n\nЦей лист надіслано автоматично\nhttps://github.com/woldemarg/edata_register",
+  body = "Доброго дня!\n\nЗа вашим запитом я оновив реєстр ДП. В додатку до цього листа - актуалізований файл для експорту в Tableau та графік.\n\nНагадую, що для для вставки графіка на Інтернет-сторінку можна використовувати постійне посиланням https://raw.githubusercontent.com/woldemarg/edata_register/master/dp_on_edata.jpg.\n\nЯкщо графік в додатку (новий) відрізняється від графіка за посилання - нагадйте мені, будь ласка, перезавантажити його на сервер, і все буде ОК!\n\nЦей лист надіслано автоматично\nhttps://github.com/woldemarg/edata_register",
   encoding = "utf-8",
   attach.files = c("tableau_register.xlsx", "dp_on_edata.jpg"),
   smtp = list(
