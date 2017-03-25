@@ -10,7 +10,8 @@ library(mailR)
 
 #=============== актуализация данных ===============#
 
-
+#добавление поля orgID
+source("orgID_import.R")
 
 #задаем формат даты для последующего преобразования
 setAs("character", "myDate", function(from)
@@ -29,7 +30,7 @@ er <-
     quote = "",
     stringsAsFactors = FALSE,
     colClasses = (c(
-      ЄДРПОУ = "character", Дата.реєстрації = "myDate"
+      ЄДРПОУ  = "character",  Дата.реєстрації  = "myDate"
     ))
   )
 
@@ -42,7 +43,7 @@ cr <-
            col_types = cols(edrpou = col_character(), reg_date = col_date(format = "%Y-%m-%d")))
 
 #вновь зарегистрированные предприятия
-new <- cr[is.na(cr$reg_date), ] %>%
+new <- cr[is.na(cr$reg_date),] %>%
   filter(edrpou %in% er[[2]]) %>%
   left_join(er, by = c("edrpou" = "ЄДРПОУ"))
 
@@ -226,7 +227,7 @@ password <- readLines("../pass.txt")
 send.mail(
   from = "wldmrgml@gmail.com",
   to = "yevhen.shulha@gmail.com",
-  cc = c("dmytro.boyarchuk@gmail.com","wldmrgml@gmail.com"),
+  cc = c("dmytro.boyarchuk@gmail.com", "wldmrgml@gmail.com"),
   subject = paste(
     "E-data register update from",
     format(Sys.Date(), "%d.%m.%Y"),
