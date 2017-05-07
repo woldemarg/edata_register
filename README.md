@@ -15,7 +15,7 @@ library(mailR) #отправка почты из R
 
 
 ### Алгоритм работы:
-1. Исходные данные - реестр ГП (файл **case_register.csv**)
+1. Исходные данные - реестр ГП на [сайте ФГИУ](http://www.spfu.gov.ua/ua/content/spf-stateproperty-Subiekti-gospodaruvannya.html)
 2. Загрузка информации о количестве электронных кабинетов с портала [e-data](http://spending.gov.ua/web/guest/disposers)
 3. Сопоставление двух списков, перенос информации о новых регистрациях в **case_register.csv**
 4. Сохранение реестра ГП в формате xls для экспорта в Tableau

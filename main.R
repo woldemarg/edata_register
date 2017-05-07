@@ -39,7 +39,7 @@ er <-
 
 #загрузка последнего обновления реестра
 cr <-
-  read_csv("case_register.csv",
+  read_csv("case_register_2017.csv",
            col_types = cols(edrpou = col_character(), reg_date = col_date(format = "%Y-%m-%d")))
 
 #вновь зарегистрированные предприятия
@@ -59,7 +59,7 @@ cr <-
 
 
 #перезаписываем текущее обновление в файл
-write_csv(cr, "case_register.csv")
+write_csv(cr, "case_register_2017.csv")
 
 #сохранение в формате xls для последующей работы в Табло
 oldOpt <- options()
