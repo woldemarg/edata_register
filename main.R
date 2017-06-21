@@ -30,7 +30,7 @@ er <-
     quote = "",
     stringsAsFactors = FALSE,
     colClasses = (c(
-      ЄДРПОУ  = "character",  Дата.реєстрації  = "myDate"
+      ЄДРПОУ     = "character",     Дата.реєстрації     = "myDate"
     ))
   )
 
@@ -43,7 +43,7 @@ cr <-
            col_types = cols(edrpou = col_character(), reg_date = col_date(format = "%Y-%m-%d")))
 
 #вновь зарегистрированные предприятия
-new <- cr[is.na(cr$reg_date),] %>%
+new <- cr[is.na(cr$reg_date), ] %>%
   filter(edrpou %in% er[[2]]) %>%
   left_join(er, by = c("edrpou" = "ЄДРПОУ"))
 
@@ -64,7 +64,20 @@ write_csv(cr, "case_register_2017.csv")
 #сохранение в формате xls для последующей работы в Табло
 oldOpt <- options()
 options(xlsx.date.format = "dd.mm.yyyy")
-write.xlsx(cr, "tableau_register.xlsx", showNA = FALSE)
+tableau_format <- cr %>%
+  rename(
+    "ЄДРПОУ" = "edrpou",
+    "OrgID" = "org_id",
+    "Reg_date" = "reg_date",
+    "Повне найменування" = "full_name",
+    "Керівна установа" = "head",
+    "Регіон (місцезнаходження) Код" = "r_code",
+    "Розташування" = "region",
+    "Адреса" = "addr",
+    "Основний вид діяльності" = "activity",
+    "Банкрутство" = "bankruptcy"
+  )
+write.xlsx(tableau_format, "tableau_register.xlsx", showNA = FALSE)
 options(oldOpt)
 
 
