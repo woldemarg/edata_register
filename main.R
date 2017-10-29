@@ -7,7 +7,6 @@ library(xlsx)
 library(mailR)
 
 
-
 #=============== актуализация данных ===============#
 
 #добавление поля orgID
@@ -30,7 +29,7 @@ er <-
     quote = "",
     stringsAsFactors = FALSE,
     colClasses = (c(
-      ЄДРПОУ     = "character",     Дата.реєстрації     = "myDate"
+      ЄДРПОУ  = "character",  Дата.реєстрації  = "myDate"
     ))
   )
 
@@ -40,7 +39,7 @@ er <-
 #загрузка последнего обновления реестра
 cr <-
   read_csv("case_register_2017.csv",
-           col_types = cols(edrpou = col_character(), reg_date = col_date(format = "%Y-%m-%d")))
+           col_types = cols(edrpou = col_character(), reg_date = col_date(format = "%d.%m.%Y")))
 
 #вновь зарегистрированные предприятия
 new <- cr[is.na(cr$reg_date), ] %>%
@@ -212,6 +211,7 @@ p <- ggplot(data = crGrouped, mapping = aes(width = 31)) +
       sep = " "
     )
   )
+
 
 #параметры сохранения в файл
 jpeg(
